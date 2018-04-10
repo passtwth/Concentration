@@ -13,25 +13,42 @@ class ConcentrationViewController: UIViewController {
     private lazy var concentrationGame = ConcentrationGame(numberOfPairsOfCard: numberPairs)
     
     private var numberPairs: Int {
-        return (cardCollectionOutlet.count + 1) / 2
+        return (visibleCard.count + 1) / 2
     }
     
     @IBOutlet private weak var flipsOutlet: UILabel!
     
     private(set) var flipCount: Int = 0 {
         didSet {
-            flipsOutlet.text = "Flips: \(flipCount)"
+            updateFlipCountLabel()
         }
     }
-    
+    private func updateFlipCountLabel() {
+        let attributes: [NSAttributedStringKey: Any] = [NSAttributedStringKey.strokeWidth: 5.0, .strokeColor: UIColor.green]
+        let traitString = traitCollection.verticalSizeClass == .compact ? "Flips:\n\(flipCount)" : "Flips: \(flipCount)"
+        let attributedText = NSAttributedString(string: traitString, attributes: attributes)
+        flipsOutlet.attributedText = attributedText
+    }
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        updateFlipCountLabel()
+    }
 
     
     @IBOutlet private var cardCollectionOutlet: [UIButton]!
     
+    private var visibleCard: [UIButton]! {
+        return cardCollectionOutlet?.filter{ !$0.superview!.isHidden }
+    }
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateCardStatus()
+
+    }
     
     @IBAction private func tapCard(_ sender: UIButton) {
         flipCount += 1
-        if let chooseCard = cardCollectionOutlet.index(of: sender) {
+        if let chooseCard = visibleCard.index(of: sender) {
             concentrationGame.chooseTheCard(at: chooseCard)
             updateCardStatus()
         } else {
@@ -41,9 +58,9 @@ class ConcentrationViewController: UIViewController {
     }
     
     private func updateCardStatus() {
-        if cardCollectionOutlet != nil {
-            for index in cardCollectionOutlet.indices {
-                let button = cardCollectionOutlet[index]
+        if visibleCard != nil {
+            for index in visibleCard.indices {
+                let button = visibleCard[index]
                 let gameCard = concentrationGame.cards[index]
                 if gameCard.isFaceUp {
                     //button.setTitle(emoji(for: gameCard), for: .normal)
